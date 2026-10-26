@@ -1,0 +1,12 @@
+{
+  "addons": {
+    "travelnet-codeshare-filter@brianhibberd.development": {
+      "updates": [
+        {
+          "version": "1.0",
+          "update_link": "https://raw.githubusercontent.com/BHibbidy/travelnet-codeshare-filter-updates/main/travelnet_codeshare_filter.xpi"
+        }
+      ]
+    }
+  }
+}
