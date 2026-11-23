@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TravelNet Flight & Codeshare Filter
 // @namespace    https://github.com/BHibbidy/travelnet-codeshare-filter-updates
-// @version      1.4
+// @version      1.5
 // @description  Filter partner codeshares, negative availability, and departure/arrival times on TravelNet.
 // @author       Brian Hibberd
 // @match        *://oldtravel.delta.com/*
@@ -15,7 +15,7 @@
   'use strict';
 
   // Inject TravelNet Filter CSS styles
-  const css = '/* TravelNet Filter Indicator & Controls */\n\n/* ── Floating Mobile Toggle Button & Badge ───────────────────────────────── */\n\n#tn-codeshare-container {\n  position: fixed !important;\n  bottom: 24px !important;\n  right: 20px !important;\n  z-index: 2147483647 !important; /* stay above page elements and modals */\n  display: flex !important;\n  flex-direction: column !important;\n  align-items: center !important;\n  gap: 6px !important;\n  user-select: none !important;\n  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;\n  pointer-events: none !important;\n  margin: 0 !important;\n  padding: 0 !important;\n  border: none !important;\n  background: transparent !important;\n  width: 50px !important;\n  height: auto !important;\n  max-width: 50px !important;\n}\n\n/* Badge displayed above the toggle button on mobile */\n#tn-codeshare-badge {\n  display: none;\n  background-color: #2e7d32 !important;\n  color: #ffffff !important;\n  font-size: 11px !important;\n  font-weight: 700 !important;\n  line-height: 1 !important;\n  padding: 4px 9px !important;\n  border-radius: 12px !important;\n  white-space: nowrap !important;\n  letter-spacing: 0.3px !important;\n  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) !important;\n  pointer-events: none !important;\n  animation: tnBadgeFadeIn 0.2s ease-out !important;\n}\n\n@keyframes tnBadgeFadeIn {\n  from {\n    opacity: 0;\n    transform: translateY(4px);\n  }\n  to {\n    opacity: 1;\n    transform: translateY(0);\n  }\n}\n\n/* Circular floating toggle button with filter funnel icon */\n#tn-codeshare-toggle {\n  width: 50px !important;\n  height: 50px !important;\n  min-width: 50px !important;\n  max-width: 50px !important;\n  min-height: 50px !important;\n  max-height: 50px !important;\n  box-sizing: border-box !important;\n  padding: 0 !important;\n  margin: 0 !important;\n  border: none !important;\n  border-radius: 50% !important;\n  cursor: pointer !important;\n  pointer-events: auto !important;\n  background-color: #6b7280 !important; /* Gray when no filter is applied */\n  color: #ffffff !important;\n  display: flex !important;\n  align-items: center !important;\n  justify-content: center !important;\n  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35) !important;\n  transition: background-color 0.2s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) !important;\n  touch-action: manipulation !important;\n  -webkit-tap-highlight-color: transparent !important;\n  overflow: hidden !important;\n  flex-shrink: 0 !important;\n}\n\n/* Green when any filter is active */\n#tn-codeshare-toggle.active {\n  background-color: #2e7d32 !important;\n}\n\n#tn-codeshare-toggle:hover {\n  transform: scale(1.08);\n}\n\n#tn-codeshare-toggle:active {\n  transform: scale(0.94);\n}\n\n#tn-codeshare-toggle svg {\n  width: 24px !important;\n  height: 24px !important;\n  min-width: 24px !important;\n  max-width: 24px !important;\n  min-height: 24px !important;\n  max-height: 24px !important;\n  box-sizing: border-box !important;\n  display: block !important;\n  pointer-events: none !important;\n  margin: auto !important;\n  padding: 0 !important;\n  stroke: #ffffff !important;\n  fill: none !important;\n  flex-shrink: 0 !important;\n}\n\n/* ── Inline Desktop Filter Bar ────────────────────────────────────────────── */\n\n#tn-filter-bar {\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  background: transparent;\n  border: none;\n  padding: 4px 0 6px 0;\n  margin: 4px 0 6px 0;\n  box-sizing: border-box;\n  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;\n  font-size: 12px;\n  color: #333333;\n}\n\n.tn-filter-row {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 12px;\n}\n\n#tn-filter-bar .tn-filter-title {\n  font-weight: 700;\n  color: #0b2341;\n  text-transform: uppercase;\n  font-size: 11px;\n  letter-spacing: 0.5px;\n  margin-bottom: 2px;\n}\n\n#tn-filter-bar .tn-filter-option {\n  display: inline-flex;\n  align-items: center;\n  gap: 6px;\n  cursor: pointer;\n  user-select: none;\n  font-size: 12px;\n  color: #222222;\n}\n\n#tn-filter-bar .tn-filter-label-fixed {\n  min-width: 95px;\n}\n\n#tn-filter-bar .tn-filter-option input[type="checkbox"] {\n  cursor: pointer;\n  margin: 0;\n  width: 14px;\n  height: 14px;\n  accent-color: #003366;\n}\n\n#tn-filter-bar .tn-filter-badge {\n  display: inline-block;\n  background-color: #2e7d32;\n  color: #ffffff;\n  font-size: 10px;\n  font-weight: 700;\n  padding: 1px 7px;\n  border-radius: 10px;\n  line-height: 1.3;\n  letter-spacing: 0.2px;\n}\n\n/* ── Dual-Range Sliders for Departure & Arrival Times ─────────────────────── */\n\n.tn-time-display {\n  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;\n  font-size: 11px;\n  font-weight: 600;\n  color: #1a1a1a;\n  min-width: 135px;\n  white-space: nowrap;\n}\n\n.tn-slider-wrapper {\n  position: relative;\n  width: 240px;\n  height: 20px;\n  display: inline-flex;\n  align-items: center;\n}\n\n.tn-slider-track-bg {\n  position: absolute;\n  left: 0;\n  right: 0;\n  height: 4px;\n  background-color: #cbd5e1;\n  border-radius: 2px;\n  pointer-events: none;\n}\n\n.tn-slider-track-highlight {\n  position: absolute;\n  height: 4px;\n  background-color: #003366;\n  border-radius: 2px;\n  pointer-events: none;\n}\n\n.tn-slider-wrapper input[type="range"] {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  margin: 0;\n  padding: 0;\n  pointer-events: none;\n  -webkit-appearance: none;\n  appearance: none;\n  background: transparent;\n  border: none;\n  outline: none;\n  z-index: 2;\n}\n\n/* Firefox thumb styling */\n.tn-slider-wrapper input[type="range"]::-moz-range-thumb {\n  pointer-events: auto;\n  width: 15px;\n  height: 15px;\n  border-radius: 50%;\n  background-color: #003366;\n  border: 2px solid #ffffff;\n  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);\n  cursor: grab;\n  transition: transform 0.1s ease;\n}\n\n.tn-slider-wrapper input[type="range"]::-moz-range-thumb:hover {\n  transform: scale(1.2);\n}\n\n.tn-slider-wrapper input[type="range"]::-moz-range-thumb:active {\n  cursor: grabbing;\n  background-color: #0b2341;\n}\n\n.tn-slider-wrapper input[type="range"]::-moz-range-track {\n  background: transparent;\n  border: none;\n}\n\n/* WebKit thumb styling (Chrome / Safari / Edge) */\n.tn-slider-wrapper input[type="range"]::-webkit-slider-thumb {\n  pointer-events: auto;\n  -webkit-appearance: none;\n  width: 15px;\n  height: 15px;\n  border-radius: 50%;\n  background-color: #003366;\n  border: 2px solid #ffffff;\n  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);\n  cursor: grab;\n  transition: transform 0.1s ease;\n}\n\n.tn-slider-wrapper input[type="range"]::-webkit-slider-thumb:hover {\n  transform: scale(1.2);\n}\n\n.tn-slider-wrapper input[type="range"]::-webkit-slider-thumb:active {\n  cursor: grabbing;\n  background-color: #0b2341;\n}\n\n/* ── Mobile Popup Modal ──────────────────────────────────────────────────── */\n\n#tn-filter-bar.tn-mobile-modal {\n  position: fixed !important;\n  bottom: 84px !important;\n  right: 16px !important;\n  width: 320px !important;\n  max-width: calc(100vw - 32px) !important;\n  max-height: calc(100vh - 120px) !important;\n  box-sizing: border-box !important;\n  overflow-y: auto !important;\n  background: #ffffff !important;\n  background-color: #ffffff !important;\n  border: 1px solid #d1d5db !important;\n  border-radius: 12px !important;\n  padding: 14px 16px !important;\n  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35) !important;\n  z-index: 2147483646 !important; /* below floating toggle button (2147483647) */\n  pointer-events: auto !important;\n  gap: 10px !important;\n  animation: tnModalFadeIn 0.18s ease-out !important;\n}\n\n@keyframes tnModalFadeIn {\n  from {\n    opacity: 0;\n    transform: translateY(6px);\n  }\n  to {\n    opacity: 1;\n    transform: translateY(0);\n  }\n}\n\n#tn-filter-bar.tn-mobile-modal .tn-slider-wrapper {\n  width: 100% !important;\n  max-width: 200px !important;\n}\n\n#tn-filter-bar input[type="checkbox"] {\n  display: inline-block !important;\n  visibility: visible !important;\n  opacity: 1 !important;\n  position: static !important;\n  cursor: pointer !important;\n  margin: 0 !important;\n  padding: 0 !important;\n  width: 15px !important;\n  height: 15px !important;\n  min-width: 15px !important;\n  min-height: 15px !important;\n  accent-color: #003366 !important;\n  clip: auto !important;\n  -webkit-appearance: checkbox !important;\n  appearance: checkbox !important;\n}\n';
+  const css = '/* TravelNet Filter Indicator & Controls */\n\n/* ── Floating Mobile Toggle Button & Badge ───────────────────────────────── */\n\n#tn-codeshare-container {\n  position: fixed !important;\n  bottom: 24px !important;\n  right: 20px !important;\n  z-index: 2147483647 !important; /* stay above page elements and modals */\n  display: flex !important;\n  flex-direction: column !important;\n  align-items: center !important;\n  gap: 6px !important;\n  user-select: none !important;\n  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;\n  pointer-events: none !important;\n  margin: 0 !important;\n  padding: 0 !important;\n  border: none !important;\n  background: transparent !important;\n  width: 50px !important;\n  height: auto !important;\n  max-width: 50px !important;\n}\n\n/* Badge displayed above the toggle button on mobile */\n#tn-codeshare-badge {\n  display: none;\n  background-color: #2e7d32 !important;\n  color: #ffffff !important;\n  font-size: 11px !important;\n  font-weight: 700 !important;\n  line-height: 1 !important;\n  padding: 4px 9px !important;\n  border-radius: 12px !important;\n  white-space: nowrap !important;\n  letter-spacing: 0.3px !important;\n  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) !important;\n  pointer-events: none !important;\n  animation: tnBadgeFadeIn 0.2s ease-out !important;\n}\n\n@keyframes tnBadgeFadeIn {\n  from {\n    opacity: 0;\n    transform: translateY(4px);\n  }\n  to {\n    opacity: 1;\n    transform: translateY(0);\n  }\n}\n\n/* Circular floating toggle button with filter funnel icon */\n#tn-codeshare-toggle {\n  width: 50px !important;\n  height: 50px !important;\n  min-width: 50px !important;\n  max-width: 50px !important;\n  min-height: 50px !important;\n  max-height: 50px !important;\n  box-sizing: border-box !important;\n  padding: 0 !important;\n  margin: 0 !important;\n  border: none !important;\n  border-radius: 50% !important;\n  cursor: pointer !important;\n  pointer-events: auto !important;\n  background-color: #6b7280 !important; /* Gray when no filter is applied */\n  color: #ffffff !important;\n  display: flex !important;\n  align-items: center !important;\n  justify-content: center !important;\n  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35) !important;\n  transition: background-color 0.2s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) !important;\n  touch-action: manipulation !important;\n  -webkit-tap-highlight-color: transparent !important;\n  overflow: hidden !important;\n  flex-shrink: 0 !important;\n}\n\n/* Green when any filter is active */\n#tn-codeshare-toggle.active {\n  background-color: #2e7d32 !important;\n}\n\n#tn-codeshare-toggle:hover {\n  transform: scale(1.08);\n}\n\n#tn-codeshare-toggle:active {\n  transform: scale(0.94);\n}\n\n#tn-codeshare-toggle svg {\n  width: 24px !important;\n  height: 24px !important;\n  min-width: 24px !important;\n  max-width: 24px !important;\n  min-height: 24px !important;\n  max-height: 24px !important;\n  box-sizing: border-box !important;\n  display: block !important;\n  pointer-events: none !important;\n  margin: auto !important;\n  padding: 0 !important;\n  stroke: #ffffff !important;\n  fill: none !important;\n  flex-shrink: 0 !important;\n}\n\n/* ── Inline Desktop Filter Bar ────────────────────────────────────────────── */\n\n#tn-filter-bar {\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  background: transparent;\n  border: none;\n  padding: 4px 0 6px 0;\n  margin: 4px 0 6px 0;\n  box-sizing: border-box;\n  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;\n  font-size: 12px;\n  color: #333333;\n}\n\n.tn-filter-row {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 12px;\n}\n\n#tn-filter-bar .tn-filter-title {\n  font-weight: 700;\n  color: #0b2341;\n  text-transform: uppercase;\n  font-size: 11px;\n  letter-spacing: 0.5px;\n  margin-bottom: 2px;\n}\n\n#tn-filter-bar .tn-filter-option {\n  display: inline-flex;\n  align-items: center;\n  gap: 6px;\n  cursor: pointer;\n  user-select: none;\n  font-size: 12px;\n  color: #222222;\n}\n\n#tn-filter-bar .tn-filter-label-fixed {\n  min-width: 95px;\n}\n\n#tn-filter-bar .tn-filter-option input[type="checkbox"] {\n  cursor: pointer;\n  margin: 0;\n  width: 14px;\n  height: 14px;\n  accent-color: #003366;\n}\n\n#tn-filter-bar .tn-filter-badge {\n  display: inline-block;\n  background-color: #2e7d32;\n  color: #ffffff;\n  font-size: 10px;\n  font-weight: 700;\n  padding: 1px 7px;\n  border-radius: 10px;\n  line-height: 1.3;\n  letter-spacing: 0.2px;\n}\n\n/* ── Dual-Range Sliders for Departure & Arrival Times ─────────────────────── */\n\n.tn-time-display {\n  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;\n  font-size: 11px;\n  font-weight: 600;\n  color: #1a1a1a;\n  min-width: 135px;\n  white-space: nowrap;\n}\n\n.tn-slider-wrapper {\n  position: relative;\n  width: 240px;\n  height: 20px;\n  display: inline-flex;\n  align-items: center;\n}\n\n.tn-slider-track-bg {\n  position: absolute;\n  left: 0;\n  right: 0;\n  height: 4px;\n  background-color: #cbd5e1;\n  border-radius: 2px;\n  pointer-events: none;\n}\n\n.tn-slider-track-highlight {\n  position: absolute;\n  height: 4px;\n  background-color: #003366;\n  border-radius: 2px;\n  pointer-events: none;\n}\n\n.tn-slider-wrapper input[type="range"] {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  margin: 0;\n  padding: 0;\n  pointer-events: none;\n  -webkit-appearance: none;\n  appearance: none;\n  background: transparent;\n  border: none;\n  outline: none;\n  z-index: 2;\n}\n\n/* Firefox thumb styling */\n.tn-slider-wrapper input[type="range"]::-moz-range-thumb {\n  pointer-events: auto;\n  width: 15px;\n  height: 15px;\n  border-radius: 50%;\n  background-color: #003366;\n  border: 2px solid #ffffff;\n  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);\n  cursor: grab;\n  transition: transform 0.1s ease;\n}\n\n.tn-slider-wrapper input[type="range"]::-moz-range-thumb:hover {\n  transform: scale(1.2);\n}\n\n.tn-slider-wrapper input[type="range"]::-moz-range-thumb:active {\n  cursor: grabbing;\n  background-color: #0b2341;\n}\n\n.tn-slider-wrapper input[type="range"]::-moz-range-track {\n  background: transparent;\n  border: none;\n}\n\n/* WebKit thumb styling (Chrome / Safari / Edge) */\n.tn-slider-wrapper input[type="range"]::-webkit-slider-thumb {\n  pointer-events: auto;\n  -webkit-appearance: none;\n  width: 15px;\n  height: 15px;\n  border-radius: 50%;\n  background-color: #003366;\n  border: 2px solid #ffffff;\n  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);\n  cursor: grab;\n  transition: transform 0.1s ease;\n}\n\n.tn-slider-wrapper input[type="range"]::-webkit-slider-thumb:hover {\n  transform: scale(1.2);\n}\n\n.tn-slider-wrapper input[type="range"]::-webkit-slider-thumb:active {\n  cursor: grabbing;\n  background-color: #0b2341;\n}\n\n/* ── Mobile Popup Modal ──────────────────────────────────────────────────── */\n\n#tn-filter-bar.tn-mobile-modal {\n  position: fixed !important;\n  bottom: 84px !important;\n  right: 16px !important;\n  width: 320px !important;\n  max-width: calc(100vw - 32px) !important;\n  max-height: calc(100vh - 120px) !important;\n  box-sizing: border-box !important;\n  overflow-y: auto !important;\n  background: #ffffff !important;\n  background-color: #ffffff !important;\n  border: 1px solid #d1d5db !important;\n  border-radius: 12px !important;\n  padding: 14px 16px !important;\n  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35) !important;\n  z-index: 2147483646 !important; /* below floating toggle button (2147483647) */\n  pointer-events: auto !important;\n  gap: 10px !important;\n  animation: tnModalFadeIn 0.18s ease-out !important;\n}\n\n@keyframes tnModalFadeIn {\n  from {\n    opacity: 0;\n    transform: translateY(6px);\n  }\n  to {\n    opacity: 1;\n    transform: translateY(0);\n  }\n}\n\n#tn-filter-bar.tn-mobile-modal .tn-slider-wrapper {\n  width: 100% !important;\n  max-width: 200px !important;\n}\n\n#tn-filter-bar input[type="checkbox"] {\n  display: inline-block !important;\n  visibility: visible !important;\n  opacity: 1 !important;\n  position: static !important;\n  cursor: pointer !important;\n  margin: 0 !important;\n  padding: 0 !important;\n  width: 15px !important;\n  height: 15px !important;\n  min-width: 15px !important;\n  min-height: 15px !important;\n  accent-color: #003366 !important;\n  clip: auto !important;\n  -webkit-appearance: checkbox !important;\n  appearance: checkbox !important;\n}\n\n/* ── Quick List (Desktop Search Shortcut) ─────────────────────────────────── */\n\n#tn-quick-list-container {\n  display: block;\n  margin: 6px 0 10px 0;\n  padding: 0;\n  font-family: Arial, Helvetica, sans-serif;\n  box-sizing: border-box;\n  clear: both;\n}\n\n.tn-quick-row {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  margin-bottom: 6px;\n}\n\n.tn-quick-row-label {\n  display: inline-block;\n  min-width: 76px;\n  font-family: Arial, Helvetica, sans-serif;\n  font-size: 11px;\n  font-weight: bold;\n  color: #333333;\n  user-select: none;\n}\n\n.tn-quick-buttons-row {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  margin-bottom: 5px;\n}\n\n.tn-quick-btn {\n  display: inline-flex !important;\n  align-items: center !important;\n  justify-content: center !important;\n  background-color: #ba1c21 !important; /* Delta Red matching Search & Clear All */\n  color: #ffffff !important;\n  font-family: Arial, Helvetica, sans-serif !important;\n  font-size: 11px !important;\n  font-weight: bold !important;\n  padding: 4px 14px !important;\n  border: 1px solid #991419 !important;\n  border-radius: 3px !important;\n  cursor: pointer !important;\n  text-decoration: none !important;\n  line-height: 1.4 !important;\n  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;\n  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease !important;\n  user-select: none !important;\n  -webkit-appearance: none !important;\n  appearance: none !important;\n  width: auto !important;\n  margin: 0 !important;\n}\n\n.tn-quick-btn:hover {\n  background-color: #991419 !important;\n  color: #ffffff !important;\n  text-decoration: none !important;\n}\n\n.tn-quick-btn:active {\n  background-color: #7a1014 !important;\n  transform: translateY(1px) !important;\n}\n\n/* Tomorrow button variant: white background with red text */\n.tn-quick-btn-tomorrow {\n  background-color: #ffffff !important;\n  color: #ba1c21 !important;\n  border: 1px solid #ba1c21 !important;\n}\n\n.tn-quick-btn-tomorrow:hover {\n  background-color: #fdf2f2 !important;\n  color: #991419 !important;\n  border-color: #991419 !important;\n}\n\n.tn-quick-btn-tomorrow:active {\n  background-color: #fae4e5 !important;\n  transform: translateY(1px) !important;\n}\n\n.tn-quick-link-row {\n  margin: 3px 0;\n  font-size: 11px;\n}\n\n.tn-quick-link {\n  color: #003366 !important;\n  font-size: 11px;\n  font-family: Arial, Helvetica, sans-serif;\n  text-decoration: underline !important;\n  cursor: pointer;\n  background: none;\n  border: none;\n  padding: 0;\n  font-weight: 600;\n}\n\n.tn-quick-link:hover {\n  color: #ba1c21 !important;\n}\n\n.tn-quick-form-card {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  margin-top: 6px;\n  padding: 6px 12px;\n  background-color: #f4f4f4;\n  border: 1px solid #cccccc;\n  border-radius: 4px;\n  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);\n  font-size: 12px;\n  font-family: Arial, Helvetica, sans-serif;\n  flex-wrap: wrap;\n}\n\n.tn-quick-form-card label {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  font-weight: bold;\n  color: #333333;\n}\n\n.tn-quick-form-card input.inputTextCaps {\n  width: 44px;\n  padding: 2px 4px;\n  text-align: center;\n  font-weight: bold;\n  font-size: 12px;\n  text-transform: uppercase;\n  border: 1px solid #7f9db9;\n}\n\n.tn-quick-form-card input.inputTextCaps:focus {\n  outline: none;\n  border-color: #ba1c21;\n  box-shadow: 0 0 3px rgba(186, 28, 33, 0.5);\n}\n\n.tn-quick-btn-save {\n  background-color: #2e7d32;\n  color: #ffffff !important;\n  font-family: Arial, Helvetica, sans-serif;\n  font-size: 11px;\n  font-weight: bold;\n  padding: 3px 10px;\n  border: 1px solid #1b5e20;\n  border-radius: 3px;\n  cursor: pointer;\n  transition: background-color 0.15s ease;\n}\n\n.tn-quick-btn-save:hover {\n  background-color: #1b5e20;\n}\n\n.tn-quick-btn-delete {\n  background-color: #c62828;\n  color: #ffffff !important;\n  font-family: Arial, Helvetica, sans-serif;\n  font-size: 11px;\n  font-weight: bold;\n  padding: 3px 10px;\n  border: 1px solid #b71c1c;\n  border-radius: 3px;\n  cursor: pointer;\n  transition: background-color 0.15s ease;\n}\n\n.tn-quick-btn-delete:hover {\n  background-color: #b71c1c;\n}\n\n.tn-quick-btn-cancel {\n  background-color: #757575;\n  color: #ffffff !important;\n  font-family: Arial, Helvetica, sans-serif;\n  font-size: 11px;\n  font-weight: normal;\n  padding: 3px 10px;\n  border: 1px solid #616161;\n  border-radius: 3px;\n  cursor: pointer;\n  transition: background-color 0.15s ease;\n}\n\n.tn-quick-btn-cancel:hover {\n  background-color: #616161;\n}\n\n.tn-quick-error-msg {\n  color: #d32f2f;\n  font-size: 11px;\n  font-weight: bold;\n  margin-left: 6px;\n}\n\n/* ── Mobile-Specific Quick List Styling ──────────────────────────────────── */\n\n#tn-quick-list-container.tn-quick-mobile {\n  margin: 10px 0 14px 0 !important;\n  padding: 10px 12px !important;\n  background-color: #ffffff !important;\n  border: 1px solid #d1d5db !important;\n  border-radius: 8px !important;\n  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;\n  box-sizing: border-box !important;\n  width: 100% !important;\n  clear: both !important;\n}\n\n#tn-quick-list-container.tn-quick-mobile .tn-quick-row {\n  display: flex !important;\n  align-items: center !important;\n  flex-wrap: wrap !important;\n  gap: 8px !important;\n  margin-bottom: 8px !important;\n}\n\n#tn-quick-list-container.tn-quick-mobile .tn-quick-row-label {\n  min-width: 68px !important;\n  font-size: 12px !important;\n  font-weight: 700 !important;\n  color: #1f2937 !important;\n}\n\n#tn-quick-list-container.tn-quick-mobile .tn-quick-btn {\n  padding: 6px 12px !important;\n  font-size: 12px !important;\n  border-radius: 4px !important;\n  min-height: 32px !important;\n  touch-action: manipulation !important;\n  flex: 0 1 auto !important;\n}\n\n#tn-quick-list-container.tn-quick-mobile .tn-quick-link-row {\n  margin-top: 4px !important;\n}\n\n#tn-quick-list-container.tn-quick-mobile .tn-quick-link {\n  font-size: 12px !important;\n  padding: 4px 0 !important;\n  display: inline-block !important;\n}\n\n#tn-quick-list-container.tn-quick-mobile .tn-quick-form-card {\n  width: 100% !important;\n  box-sizing: border-box !important;\n  padding: 10px !important;\n  gap: 10px !important;\n}\n\n#tn-quick-list-container.tn-quick-mobile .tn-quick-form-card label {\n  font-size: 13px !important;\n}\n\n#tn-quick-list-container.tn-quick-mobile .tn-quick-form-card input.inputTextCaps {\n  width: 52px !important;\n  height: 28px !important;\n  font-size: 13px !important;\n}\n\n#tn-quick-list-container.tn-quick-mobile .tn-quick-btn-save,\n#tn-quick-list-container.tn-quick-mobile .tn-quick-btn-delete,\n#tn-quick-list-container.tn-quick-mobile .tn-quick-btn-cancel {\n  padding: 6px 12px !important;\n  font-size: 12px !important;\n  min-height: 30px !important;\n}\n';
   const style = document.createElement('style');
   style.id = 'travelnet-filter-styles';
   style.textContent = css;
@@ -926,6 +926,7 @@
       }
     }
 
+    ensureQuickList();
     ensureFilterBar();
     updateDOM();
   }
@@ -998,6 +999,515 @@
     updateFilterBar();
   }
 
+  // ── Quick List (Desktop Search Shortcut) ───────────────────────────────────
+
+  const QUICK_LIST_DEP_KEY = 'tn_quick_dep';
+  const QUICK_LIST_ARR_KEY = 'tn_quick_arr';
+
+  let quickListContainer = null;
+
+  function getStoredAirports() {
+    let dep = '';
+    let arr = '';
+    try {
+      dep = (localStorage.getItem(QUICK_LIST_DEP_KEY) || '').trim().toUpperCase();
+      arr = (localStorage.getItem(QUICK_LIST_ARR_KEY) || '').trim().toUpperCase();
+    } catch (e) {}
+    return { dep, arr };
+  }
+
+  function saveStoredAirports(dep, arr) {
+    dep = (dep || '').trim().toUpperCase();
+    arr = (arr || '').trim().toUpperCase();
+    try {
+      localStorage.setItem(QUICK_LIST_DEP_KEY, dep);
+      localStorage.setItem(QUICK_LIST_ARR_KEY, arr);
+    } catch (e) {}
+    try {
+      if (typeof browser !== 'undefined' && browser.storage && browser.storage.local) {
+        browser.storage.local.set({ [QUICK_LIST_DEP_KEY]: dep, [QUICK_LIST_ARR_KEY]: arr });
+      }
+    } catch (e) {}
+  }
+
+  function clearStoredAirports() {
+    try {
+      localStorage.removeItem(QUICK_LIST_DEP_KEY);
+      localStorage.removeItem(QUICK_LIST_ARR_KEY);
+    } catch (e) {}
+    try {
+      if (typeof browser !== 'undefined' && browser.storage && browser.storage.local) {
+        browser.storage.local.remove([QUICK_LIST_DEP_KEY, QUICK_LIST_ARR_KEY]);
+      }
+    } catch (e) {}
+  }
+
+  function isMobileSite() {
+    return (
+      location.href.includes('/mobile/') ||
+      Boolean(
+        document.querySelector(
+          '.ui-mobile, [data-role="page"], body.ui-mobile-viewport, link[href*="/mobile/"], script[src*="/mobile/"]'
+        )
+      )
+    );
+  }
+
+  function triggerSearch() {
+    // 1. Desktop primary: Search button in schedule / "Search all flights" section
+    const searchLinks = Array.from(document.querySelectorAll('a.buttonLink'));
+    const desktopSearch =
+      searchLinks.find((a) => {
+        const text = (a.textContent || '').trim().toLowerCase();
+        const onclick = a.getAttribute('onclick') || '';
+        return text === 'search' && (onclick.includes('schedule') || onclick.includes('searchAlert'));
+      }) || searchLinks.find((a) => (a.textContent || '').trim().toLowerCase() === 'search');
+
+    if (desktopSearch) {
+      desktopSearch.click();
+      return;
+    }
+
+    // 2. Mobile submit button / link
+    const mobileBtn =
+      document.querySelector(
+        'form input[type="submit"], form button[type="submit"], #search, #searchBtn, #btnSearch'
+      ) ||
+      Array.from(document.querySelectorAll('button, a.ui-btn, a, input[type="button"], input[type="submit"]')).find(
+        (el) => {
+          const txt = (el.textContent || el.value || '').trim().toLowerCase();
+          return txt === 'search' || txt === 'search flights';
+        }
+      );
+
+    if (mobileBtn) {
+      mobileBtn.click();
+      return;
+    }
+
+    // 3. Fallback: Submit the form
+    const form =
+      document.querySelector('form[action*="nonRevenueSearch"]') ||
+      document.querySelector('form[action*="searchFlightsResults"]') ||
+      document.querySelector('form[action*="searchFlights"]') ||
+      document.querySelector('form');
+
+    if (form) {
+      if (typeof form.submit === 'function') {
+        form.submit();
+      } else {
+        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      }
+    }
+  }
+
+  function formatFlightDate(d) {
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${mm}/${dd}/${yyyy}`;
+  }
+
+  function getSearchDates() {
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return {
+      todayStr: formatFlightDate(today),
+      tomorrowStr: formatFlightDate(tomorrow)
+    };
+  }
+
+  function executeQuickSearch(depCode, arrCode, dateStr) {
+    const fromInput =
+      document.getElementById('fromAirport') || document.querySelector('input[name="fromAirport"]');
+    const toInput =
+      document.getElementById('toAirport') || document.querySelector('input[name="toAirport"]');
+    const leaveDateInput =
+      document.getElementById('leaveDate') || document.querySelector('input[name="leaveDate"]');
+
+    if (fromInput) {
+      fromInput.value = depCode;
+      fromInput.dispatchEvent(new Event('input', { bubbles: true }));
+      fromInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    if (toInput) {
+      toInput.value = arrCode;
+      toInput.dispatchEvent(new Event('input', { bubbles: true }));
+      toInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    const oneWayRadio = document.querySelector('input[name="tripWay"][value="oneWay"]');
+    if (oneWayRadio) {
+      oneWayRadio.checked = true;
+      oneWayRadio.click();
+      oneWayRadio.dispatchEvent(new Event('change', { bubbles: true }));
+      try {
+        if (typeof window.wrappedJSObject !== 'undefined' && window.wrappedJSObject.$) {
+          window.wrappedJSObject.$(oneWayRadio).prop('checked', true).checkboxradio('refresh');
+        }
+      } catch (e) {}
+    }
+
+    if (leaveDateInput) {
+      leaveDateInput.value = dateStr;
+      leaveDateInput.dispatchEvent(new Event('input', { bubbles: true }));
+      leaveDateInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    if (fromInput && toInput) {
+      setTimeout(() => {
+        triggerSearch();
+      }, 60);
+    } else if (isMobileSite()) {
+      // Mobile direct navigation fallback (e.g. from mobile search results page)
+      const params = new URLSearchParams({
+        searchType: 'schedule',
+        activeMenu: 'nonRevenue',
+        tripWay: 'oneWay',
+        leaveTime: 'D',
+        upgradedTN: 'true',
+        fromAirport: depCode,
+        toAirport: arrCode,
+        leaveDate: dateStr
+      });
+      const targetUrl = new URL('searchFlightsResults.action?' + params.toString(), location.href).href;
+      location.href = targetUrl;
+    }
+  }
+
+  function renderQuickListUI() {
+    if (!quickListContainer) return;
+    quickListContainer.innerHTML = '';
+
+    const { dep, arr } = getStoredAirports();
+    const hasAirports = dep && arr;
+
+    if (!hasAirports) {
+      // ── State 1: Choose Airports Link & Form ─────────────────────────────
+      const linkRow = document.createElement('div');
+      linkRow.className = 'tn-quick-link-row';
+
+      const chooseLink = document.createElement('a');
+      chooseLink.href = '#';
+      chooseLink.className = 'tn-quick-link';
+      chooseLink.textContent = 'Choose Airports';
+      chooseLink.title = 'Configure default departure and arrival airports for quick searches';
+      linkRow.appendChild(chooseLink);
+      quickListContainer.appendChild(linkRow);
+
+      const formCard = document.createElement('div');
+      formCard.className = 'tn-quick-form-card';
+      formCard.style.display = 'none';
+
+      formCard.innerHTML = `
+        <label>Departure: <input type="text" class="inputTextCaps tn-quick-dep" maxlength="3" size="3"></label>
+        <label>Arrival: <input type="text" class="inputTextCaps tn-quick-arr" maxlength="3" size="3"></label>
+        <button type="button" class="tn-quick-btn-save">Save</button>
+        <button type="button" class="tn-quick-btn-cancel">Cancel</button>
+        <span class="tn-quick-error-msg" style="display: none;">Please enter 3-letter codes</span>
+      `;
+
+      quickListContainer.appendChild(formCard);
+
+      const depInput = formCard.querySelector('.tn-quick-dep');
+      const arrInput = formCard.querySelector('.tn-quick-arr');
+      const saveBtn = formCard.querySelector('.tn-quick-btn-save');
+      const cancelBtn = formCard.querySelector('.tn-quick-btn-cancel');
+      const errorMsg = formCard.querySelector('.tn-quick-error-msg');
+
+      chooseLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        const isOpen = formCard.style.display !== 'none';
+        formCard.style.display = isOpen ? 'none' : 'inline-flex';
+        if (!isOpen) {
+          depInput.focus();
+        }
+      });
+
+      depInput.addEventListener('input', () => {
+        depInput.value = depInput.value.toUpperCase();
+        errorMsg.style.display = 'none';
+      });
+
+      arrInput.addEventListener('input', () => {
+        arrInput.value = arrInput.value.toUpperCase();
+        errorMsg.style.display = 'none';
+      });
+
+      depInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          arrInput.focus();
+        }
+      });
+
+      arrInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveBtn.click();
+        }
+      });
+
+      cancelBtn.addEventListener('click', () => {
+        formCard.style.display = 'none';
+        errorMsg.style.display = 'none';
+        depInput.value = '';
+        arrInput.value = '';
+      });
+
+      saveBtn.addEventListener('click', () => {
+        const dVal = depInput.value.trim().toUpperCase();
+        const aVal = arrInput.value.trim().toUpperCase();
+        if (!/^[A-Z]{3}$/.test(dVal) || !/^[A-Z]{3}$/.test(aVal)) {
+          errorMsg.style.display = 'inline';
+          return;
+        }
+        saveStoredAirports(dVal, aVal);
+        renderQuickListUI();
+      });
+    } else {
+      // ── State 2: Four Route Buttons (Today & Tomorrow) & Edit Link ────
+      const { todayStr, tomorrowStr } = getSearchDates();
+
+      // Row 1: Today (current date)
+      const todayRow = document.createElement('div');
+      todayRow.className = 'tn-quick-row';
+
+      const todayLabel = document.createElement('span');
+      todayLabel.className = 'tn-quick-row-label';
+      todayLabel.textContent = 'Today:';
+      todayRow.appendChild(todayLabel);
+
+      const btnToday1 = document.createElement('button');
+      btnToday1.type = 'button';
+      btnToday1.className = 'tn-quick-btn';
+      btnToday1.textContent = `${dep} → ${arr}`;
+      btnToday1.title = `Search ${dep} to ${arr} for today (${todayStr})`;
+      btnToday1.addEventListener('click', (e) => {
+        e.preventDefault();
+        executeQuickSearch(dep, arr, todayStr);
+      });
+
+      const btnToday2 = document.createElement('button');
+      btnToday2.type = 'button';
+      btnToday2.className = 'tn-quick-btn';
+      btnToday2.textContent = `${arr} → ${dep}`;
+      btnToday2.title = `Search ${arr} to ${dep} for today (${todayStr})`;
+      btnToday2.addEventListener('click', (e) => {
+        e.preventDefault();
+        executeQuickSearch(arr, dep, todayStr);
+      });
+
+      todayRow.appendChild(btnToday1);
+      todayRow.appendChild(btnToday2);
+      quickListContainer.appendChild(todayRow);
+
+      // Row 2: Tomorrow (tomorrow's date, white with red text)
+      const tomorrowRow = document.createElement('div');
+      tomorrowRow.className = 'tn-quick-row';
+
+      const tomorrowLabel = document.createElement('span');
+      tomorrowLabel.className = 'tn-quick-row-label';
+      tomorrowLabel.textContent = 'Tomorrow:';
+      tomorrowRow.appendChild(tomorrowLabel);
+
+      const btnTomorrow1 = document.createElement('button');
+      btnTomorrow1.type = 'button';
+      btnTomorrow1.className = 'tn-quick-btn tn-quick-btn-tomorrow';
+      btnTomorrow1.textContent = `${dep} → ${arr}`;
+      btnTomorrow1.title = `Search ${dep} to ${arr} for tomorrow (${tomorrowStr})`;
+      btnTomorrow1.addEventListener('click', (e) => {
+        e.preventDefault();
+        executeQuickSearch(dep, arr, tomorrowStr);
+      });
+
+      const btnTomorrow2 = document.createElement('button');
+      btnTomorrow2.type = 'button';
+      btnTomorrow2.className = 'tn-quick-btn tn-quick-btn-tomorrow';
+      btnTomorrow2.textContent = `${arr} → ${dep}`;
+      btnTomorrow2.title = `Search ${arr} to ${dep} for tomorrow (${tomorrowStr})`;
+      btnTomorrow2.addEventListener('click', (e) => {
+        e.preventDefault();
+        executeQuickSearch(arr, dep, tomorrowStr);
+      });
+
+      tomorrowRow.appendChild(btnTomorrow1);
+      tomorrowRow.appendChild(btnTomorrow2);
+      quickListContainer.appendChild(tomorrowRow);
+
+      const linkRow = document.createElement('div');
+      linkRow.className = 'tn-quick-link-row';
+
+      const editLink = document.createElement('a');
+      editLink.href = '#';
+      editLink.className = 'tn-quick-link';
+      editLink.textContent = 'Edit Airports';
+      editLink.title = 'Change or delete your default airports';
+      linkRow.appendChild(editLink);
+      quickListContainer.appendChild(linkRow);
+
+      const formCard = document.createElement('div');
+      formCard.className = 'tn-quick-form-card';
+      formCard.style.display = 'none';
+
+      formCard.innerHTML = `
+        <label>Departure: <input type="text" class="inputTextCaps tn-quick-dep" maxlength="3" size="3" value="${dep}"></label>
+        <label>Arrival: <input type="text" class="inputTextCaps tn-quick-arr" maxlength="3" size="3" value="${arr}"></label>
+        <button type="button" class="tn-quick-btn-save">Save</button>
+        <button type="button" class="tn-quick-btn-delete">Delete</button>
+        <button type="button" class="tn-quick-btn-cancel">Cancel</button>
+        <span class="tn-quick-error-msg" style="display: none;">Please enter 3-letter codes</span>
+      `;
+
+      quickListContainer.appendChild(formCard);
+
+      const depInput = formCard.querySelector('.tn-quick-dep');
+      const arrInput = formCard.querySelector('.tn-quick-arr');
+      const saveBtn = formCard.querySelector('.tn-quick-btn-save');
+      const deleteBtn = formCard.querySelector('.tn-quick-btn-delete');
+      const cancelBtn = formCard.querySelector('.tn-quick-btn-cancel');
+      const errorMsg = formCard.querySelector('.tn-quick-error-msg');
+
+      editLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        const isOpen = formCard.style.display !== 'none';
+        formCard.style.display = isOpen ? 'none' : 'inline-flex';
+        if (!isOpen) {
+          depInput.value = dep;
+          arrInput.value = arr;
+          depInput.focus();
+        }
+      });
+
+      depInput.addEventListener('input', () => {
+        depInput.value = depInput.value.toUpperCase();
+        errorMsg.style.display = 'none';
+      });
+
+      arrInput.addEventListener('input', () => {
+        arrInput.value = arrInput.value.toUpperCase();
+        errorMsg.style.display = 'none';
+      });
+
+      depInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          arrInput.focus();
+        }
+      });
+
+      arrInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveBtn.click();
+        }
+      });
+
+      cancelBtn.addEventListener('click', () => {
+        formCard.style.display = 'none';
+        errorMsg.style.display = 'none';
+      });
+
+      deleteBtn.addEventListener('click', () => {
+        clearStoredAirports();
+        renderQuickListUI();
+      });
+
+      saveBtn.addEventListener('click', () => {
+        const dVal = depInput.value.trim().toUpperCase();
+        const aVal = arrInput.value.trim().toUpperCase();
+        if (!/^[A-Z]{3}$/.test(dVal) || !/^[A-Z]{3}$/.test(aVal)) {
+          errorMsg.style.display = 'inline';
+          return;
+        }
+        saveStoredAirports(dVal, aVal);
+        renderQuickListUI();
+      });
+    }
+  }
+
+  function ensureQuickList() {
+    const isMobile = isMobileSite();
+    const activePage = document.querySelector('.ui-page-active, [data-role="page"]');
+    const existing = document.getElementById('tn-quick-list-container');
+
+    if (existing) {
+      if (activePage && !activePage.contains(existing)) {
+        existing.remove();
+      } else {
+        return;
+      }
+    }
+
+    const fromInput =
+      document.getElementById('fromAirport') || document.querySelector('input[name="fromAirport"]');
+    const toInput =
+      document.getElementById('toAirport') || document.querySelector('input[name="toAirport"]');
+
+    // On desktop, require fromInput and toInput
+    if (!isMobile && (!fromInput || !toInput)) return;
+
+    // Check insertion targets
+    const resultsTop = document.querySelector('table.resultsTop');
+    const formContainer = document.querySelector('div.formContainer');
+    const mobileResultsArea = document.querySelector('#searchresultsarea, #searchflightsresults');
+    const mobileContent =
+      (activePage && activePage.querySelector('[data-role="content"], .ui-content')) ||
+      document.querySelector('[data-role="content"], .ui-content');
+
+    if (!isMobile && !resultsTop && !formContainer && !fromInput) return;
+    if (isMobile && !fromInput && !mobileResultsArea && !mobileContent) return;
+
+    quickListContainer = document.createElement('div');
+    quickListContainer.id = 'tn-quick-list-container';
+    if (isMobile) {
+      quickListContainer.classList.add('tn-quick-mobile');
+    }
+
+    if (resultsTop && resultsTop.parentElement) {
+      resultsTop.insertAdjacentElement('afterend', quickListContainer);
+    } else if (formContainer && formContainer.parentElement) {
+      formContainer.parentElement.insertBefore(quickListContainer, formContainer);
+    } else if (fromInput && fromInput.closest('form')) {
+      fromInput.closest('form').insertAdjacentElement('beforebegin', quickListContainer);
+    } else if (mobileResultsArea && mobileResultsArea.parentElement) {
+      mobileResultsArea.parentElement.insertBefore(quickListContainer, mobileResultsArea);
+    } else if (mobileContent) {
+      const heading = mobileContent.querySelector('h1, h2');
+      if (heading && heading.parentElement === mobileContent) {
+        heading.insertAdjacentElement('afterend', quickListContainer);
+      } else {
+        mobileContent.insertAdjacentElement('afterbegin', quickListContainer);
+      }
+    } else {
+      document.body.insertAdjacentElement('afterbegin', quickListContainer);
+    }
+
+    renderQuickListUI();
+  }
+
+  // Sync with browser.storage.local if available asynchronously
+  try {
+    if (typeof browser !== 'undefined' && browser.storage && browser.storage.local) {
+      browser.storage.local
+        .get([QUICK_LIST_DEP_KEY, QUICK_LIST_ARR_KEY])
+        .then((res) => {
+          if (res && res[QUICK_LIST_DEP_KEY] && res[QUICK_LIST_ARR_KEY]) {
+            const current = getStoredAirports();
+            if (!current.dep || !current.arr) {
+              localStorage.setItem(QUICK_LIST_DEP_KEY, res[QUICK_LIST_DEP_KEY]);
+              localStorage.setItem(QUICK_LIST_ARR_KEY, res[QUICK_LIST_ARR_KEY]);
+              renderQuickListUI();
+            }
+          }
+        })
+        .catch(() => {});
+    }
+  } catch (e) {}
+
   // ── Dynamic updates & MutationObserver ──────────────────────────────────────
 
   let debounceTimer = null;
@@ -1012,8 +1522,22 @@
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
           if (node.nodeType === Node.ELEMENT_NODE) {
-            if (node.id === 'tn-codeshare-container' || node.id === 'tn-filter-bar') {
+            if (
+              node.id === 'tn-codeshare-container' ||
+              node.id === 'tn-filter-bar' ||
+              node.id === 'tn-quick-list-container'
+            ) {
               continue;
+            }
+
+            const currentQL = document.getElementById('tn-quick-list-container');
+            if (!currentQL) {
+              ensureQuickList();
+            } else {
+              const activePage = document.querySelector('.ui-page-active, [data-role="page"]');
+              if (activePage && !activePage.contains(currentQL)) {
+                ensureQuickList();
+              }
             }
 
             if (
@@ -1041,8 +1565,13 @@
   // ── Initialization ──────────────────────────────────────────────────────────
 
   function init() {
+    ensureQuickList();
     scanAndFilter();
     setupObserver();
+
+    // jQuery Mobile page transition listeners
+    document.addEventListener('pageshow', ensureQuickList);
+    document.addEventListener('pagecontainershow', ensureQuickList);
   }
 
   if (document.readyState === 'loading') {
